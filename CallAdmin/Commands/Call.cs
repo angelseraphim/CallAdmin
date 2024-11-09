@@ -1,5 +1,6 @@
 ﻿using CommandSystem;
 using Exiled.API.Features;
+using MEC;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,6 +36,8 @@ namespace CallAdmin.Commands
                 Reason = "None";
 
             List<Player> Admins = Player.List.Where(p => player != p && Plugin.plugin.Config.AdminGroups.Contains(p.GroupName)).ToList();
+            CoolDown.Add(player);
+            Timing.CallDelayed(Plugin.plugin.Config.Cooldown, CoolDown.Remove(player));
             if (Admins.Count > 0)
             {
                 string Text = Plugin.plugin.Config.broadcast.Message.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", Reason);
