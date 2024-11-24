@@ -17,11 +17,11 @@ namespace CallAdmin.Commands
 
         public string Description { get; } = "Call administrator";
         public bool SanitizeResponse => false;
-        private readonly List<Player> CoolDown = new List<Player>();
+        private readonly List<Player> сoolDown = new List<Player>();
         public bool Execute(ArraySegment<string> args, ICommandSender sender, out string response)
         {
             Player player = Player.Get(sender);
-            if (CoolDown.Contains(player))
+            if (сoolDown.Contains(player))
             {
                 response = "You have already called the administrator";
                 return false;
@@ -36,9 +36,11 @@ namespace CallAdmin.Commands
             if (reason.IsEmpty())
                 reason = "None";
 
-            Player[] Admins = Player.List.Where(p => player != p && Plugin.plugin.Config.AdminGroups.Contains(p.GroupName)).ToArray();
-            CoolDown.Add(player);
-            Timing.CallDelayed(Plugin.plugin.Config.Cooldown, () => CoolDown.Remove(player));
+            List<Player> Admins = Player.List.Where(p => player != p && Plugin.plugin.Config.AdminGroups.Contains(p.GroupName)).ToList();
+
+            сoolDown.Add(player);
+            Timing.CallDelayed(Plugin.plugin.Config.Cooldown, () => сoolDown.Remove(player));
+
             if (Admins.Count() > 0)
             {
                 string Text = Plugin.plugin.Config.broadcast.Message.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
@@ -63,6 +65,7 @@ namespace CallAdmin.Commands
                 string Description = Plugin.plugin.Config.EmbedCon.WebhookText.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
                 Plugin.embed.SendDiscordWebhook(Plugin.plugin.Config.EmbedCon.WebhookURL, Text, Title, Description);
             }
+
             response = "You have successfully called the administrator!";
             return true;
         }
