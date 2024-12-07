@@ -1,72 +1,67 @@
-﻿using CentralAuth;
-using CommandSystem;
-using Exiled.API.Features;
-using MEC;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-
-namespace CallAdmin.Commands
+﻿namespace CallAdmin.Commands
 {
+    using System;
+    using System.Collections.Generic;
+    using System.Linq;
+
+    using CommandSystem;
+
+    using Exiled.API.Features;
+
+    using MEC;
+
     [CommandHandler(typeof(ClientCommandHandler))]
-    class Call : ICommand
+    internal class Call : ICommand
     {
         public string Command { get; } = "call";
+        public string[] Aliases { get; } = Plugin.plugin.Config.CommandAliases.ToArray();
+        public string Description { get; } = Plugin.plugin.Translation.CommandDescription;
+        public bool SanitizeResponse { get; } = false;
 
-        public string[] Aliases { get; } = { };
-
-        public string Description { get; } = "Call administrator";
-        public bool SanitizeResponse => false;
         private readonly List<Player> сoolDown = new List<Player>();
+
         public bool Execute(ArraySegment<string> args, ICommandSender sender, out string response)
         {
             Player player = Player.Get(sender);
+
             if (сoolDown.Contains(player))
             {
-                response = "You have already called the administrator";
+                response = Plugin.plugin.Translation.Cooldown;
                 return false;
             }
+
             string reason = string.Empty;
 
-            foreach(string item in args)
+            if (args.Any())
             {
-                reason += item + " ";
+                foreach (string item in args)
+                {
+                    reason += item + " ";
+                }
             }
-
-            if (reason.IsEmpty())
-                reason = "None";
+            else if (!Plugin.plugin.Config.AllowEmpty)
+            {
+                response = Plugin.plugin.Translation.EmptyReason;
+                return false;
+            }
+            reason = "None";
 
             List<Player> Admins = Player.List.Where(p => player != p && Plugin.plugin.Config.AdminGroups.Contains(p.GroupName)).ToList();
+
+            if (Admins.Any())
+            {
+                Plugin.plugin.Config.Broadcast.Send(player, reason, Admins);
+                Plugin.plugin.Config.OnlineWebhook.Send(player, reason, Admins);
+            }
+            else
+            {
+                Plugin.plugin.Config.OfflineWebhook.Send(player, reason);
+            }
 
             сoolDown.Add(player);
             Timing.CallDelayed(Plugin.plugin.Config.Cooldown, () => сoolDown.Remove(player));
 
-            if (Admins.Count() > 0)
-            {
-                string Text = Plugin.plugin.Config.broadcast.Message.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
-                string content = "0!<align=center><color=red><u>Admin call</u></color></align>\n<color=yellow>Reporter:</color>\n" + player.DisplayNickname + " (" + player.UserId + ")\n<color=yellow>Reason:</color>\n" + reason;
-
-                foreach (Player admin in Admins)
-                {
-                    admin.Broadcast(Plugin.plugin.Config.broadcast.Duration, Text);
-
-                    ReferenceHub hub = admin.ReferenceHub;
-                    ClientInstanceMode mode = hub.Mode;
-                    if (mode != 0 && mode != ClientInstanceMode.DedicatedServer && hub.serverRoles.AdminChatPerms)
-                    {
-                        hub.encryptedChannelManager.TrySendMessageToClient(content, EncryptedChannelManager.EncryptedChannel.AdminChat);
-                    }
-                }
-            }
-            else
-            {
-                string Text = Plugin.plugin.Config.EmbedCon.Text.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
-                string Title = Plugin.plugin.Config.EmbedCon.WebhookTitle.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
-                string Description = Plugin.plugin.Config.EmbedCon.WebhookText.Replace("%player%", player.Nickname).Replace("%id%", player.Id.ToString()).Replace("%userid%", player.UserId).Replace("%reason%", reason);
-                Plugin.embed.SendDiscordWebhook(Plugin.plugin.Config.EmbedCon.WebhookURL, Text, Title, Description);
-            }
-
-            response = "You have successfully called the administrator!";
+            response = Plugin.plugin.Translation.Successfull;
             return true;
         }
     }

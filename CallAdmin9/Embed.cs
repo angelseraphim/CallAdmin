@@ -1,10 +1,12 @@
-﻿using System.Net.Http;
-using System.Text;
-using Exiled.API.Features;
-using Newtonsoft.Json;
-
-namespace CallAdmin
+﻿namespace CallAdmin
 {
+    using System.Net.Http;
+    using System.Text;
+
+    using Exiled.API.Features;
+
+    using Newtonsoft.Json;
+
     public class Embed
     {
         public void SendDiscordWebhook(string WebhookURL, string Text, string Title, string WebhookText)
